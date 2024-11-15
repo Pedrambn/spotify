@@ -146,9 +146,10 @@ def home():
             playlist_url = generate_playlist_from_prompt(user_prompt)
     return render_template("index.html", playlist_url=playlist_url)
 
-if __name__ == "__main__":
-    app = Flask(__name__)
+app = Flask(__name__)
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    # Dispatcher is no longer needed, directly use application
+
+app.run(debug=True)
+    
+        
