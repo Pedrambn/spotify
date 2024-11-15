@@ -1,13 +1,21 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import re
 from difflib import SequenceMatcher
+import os
+import logging
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+import re
+from difflib import SequenceMatcher
+import os
+
 
 # Spotify API credentials
 CLIENT_ID = 'your_spotify_client_id'
 CLIENT_SECRET = 'your_spotify_client_secret'
-REDIRECT_URI = 'http://example.com/callback'  # Replace this with your actual redirect URI
+REDIRECT_URI = 'http://localhost/callback'
 
 # Spotify Authentication
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -15,10 +23,10 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
     scope="playlist-modify-public"
-))
+), requests_timeout=30)
 
-# Flask app setup
-app = Flask(__name__)
+# Set up logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # Function to clean and split the prompt into words
 def get_words_from_prompt(prompt):
@@ -36,22 +44,66 @@ def search_song(query):
         else:
             return None, None
     except Exception as e:
+        logging.error(f"Error searching for song: {e}")
         return None, None
 
-# Function to create a Spotify playlist with error handling
+# Function to create a Spotify playlist
 def create_playlist(name, user_id):
     try:
         playlist = sp.user_playlist_create(user=user_id, name=name, public=True)
         return playlist['id'], playlist['external_urls']['spotify']
     except Exception as e:
+        logging.error(f"Error creating playlist: {e}")
         return None, None
 
-# Function to add songs to a playlist with error handling
+# Function to add songs to a playlist
 def add_songs_to_playlist(playlist_id, track_uris):
     try:
         sp.playlist_add_items(playlist_id, track_uris)
     except Exception as e:
-        print(f"Error adding songs: {e}")
+        logging.error(f"Error adding songs: {e}")
+
+# Function to calculate the similarity ratio between two strings
+def calculate_similarity(a, b):
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+# Function to find the best match for the current sequence of words
+
+def find_best_match_from_start(words, start_index):
+    best_uri = None
+    best_combination = []
+    best_score = 0
+
+    # Try combinations starting from the current index, moving sequentially
+    for length in range(len(words) - start_index, 0, -1):
+        phrase = ' '.join(words[start_index:start_index + length])
+        track_uri, track_name = search_song(phrase)
+        if track_uri:
+            similarity_score = calculate_similarity(phrase, track_name)
+            if similarity_score > best_score:
+                best_combination = words[start_index:start_index + length]
+                best_uri = track_uri
+                best_score = similarity_score
+
+    return best_uri, best_combination
+
+def find_best_match_from_start(words, start_index):
+    best_uri = None
+    best_combination = []
+    best_score = 0
+
+    # Try combinations starting from the current index, moving sequentially
+    for length in range(len(words) - start_index, 0, -1):
+        phrase = ' '.join(words[start_index:start_index + length])
+        track_uri, track_name = search_song(phrase)
+        if track_uri:
+            similarity_score = calculate_similarity(phrase, track_name)
+            if similarity_score > best_score:
+                best_combination = words[start_index:start_index + length]
+                best_uri = track_uri
+                best_score = similarity_score
+
+    return best_uri, best_combination
 
 # Function to generate a playlist from a prompt
 def generate_playlist_from_prompt(prompt):
@@ -87,23 +139,20 @@ def generate_playlist_from_prompt(prompt):
 
 @app.route("/", methods=["GET", "POST"])
 def home():
+    playlist_url = None
     if request.method == "POST":
         user_prompt = request.form.get("prompt")
         if user_prompt:
             playlist_url = generate_playlist_from_prompt(user_prompt)
-            return render_template_string("""
-                <h1>Spotify Playlist Generator</h1>
-                <p>Playlist created successfully! <a href="{{ playlist_url }}">Click here to open your playlist</a></p>
-                <a href="/">Generate another playlist</a>
-            """, playlist_url=playlist_url)
-    return render_template_string("""
-        <h1>Spotify Playlist Generator from Prompt</h1>
-        <form method="post">
-            <label for="prompt">Enter your prompt (25 words max):</label><br><br>
-            <input type="text" id="prompt" name="prompt" required><br><br>
-            <input type="submit" value="Generate Playlist">
-        </form>
-    """)
+    return render_template("index.html", playlist_url=playlist_url)
 
 if __name__ == "__main__":
     app.run(debug=True)
+    app = Flask(__name__)
+    # Dispatcher is no longer needed, directly use application
+
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    
+if __name__ == '__main__':
+    main()
