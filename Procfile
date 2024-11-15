@@ -1,1 +1,1 @@
-web: gunicorn wordstosongs:app
+web: gunicorn app:app
