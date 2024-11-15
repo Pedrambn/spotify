@@ -3,11 +3,12 @@ from spotipy.oauth2 import SpotifyOAuth
 import re
 from difflib import SequenceMatcher
 import streamlit as st
+import time
 
-# Spotify API credentials - Make sure to replace these with your own
-CLIENT_ID = st.secrets["spotify"]["client_id"]
-CLIENT_SECRET = st.secrets["spotify"]["client_secret"]
-REDIRECT_URI = st.secrets["spotify"]["redirect_uri"]
+# Spotify API credentials - Using Streamlit secrets
+CLIENT_ID = st.secrets['spotify']['client_id']
+CLIENT_SECRET = st.secrets['spotify']['client_secret']
+REDIRECT_URI = st.secrets['spotify']['redirect_uri']
 
 # Spotify Authentication
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -15,7 +16,7 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
     scope="playlist-modify-public"
-), requests_timeout=10)
+), requests_timeout=30)
 
 # Function to clean and split the prompt into words
 def get_words_from_prompt(prompt):
@@ -25,21 +26,37 @@ def get_words_from_prompt(prompt):
 
 # Function to search for a song by title
 def search_song(query):
-    results = sp.search(q=f'track:{query}', type='track', limit=5)
-    tracks = results.get('tracks', {}).get('items', [])
-    if tracks:
-        return tracks[0]['uri'], tracks[0]['name']
-    else:
+    try:
+        results = sp.search(q=f'track:{query}', type='track', limit=5)
+        tracks = results.get('tracks', {}).get('items', [])
+        if tracks:
+            return tracks[0]['uri'], tracks[0]['name']
+        else:
+            return None, None
+    except Exception as e:
+        st.write(f"Error searching for song: {e}")
         return None, None
 
-# Function to create a Spotify playlist
+# Function to create a Spotify playlist with error handling
 def create_playlist(name, user_id):
-    playlist = sp.user_playlist_create(user=user_id, name=name, public=True)
-    return playlist['id'], playlist['external_urls']['spotify']
+    try:
+        st.write("Creating a new playlist...")
+        playlist = sp.user_playlist_create(user=user_id, name=name, public=True)
+        st.write("Playlist created successfully.")
+        return playlist['id'], playlist['external_urls']['spotify']
+    except Exception as e:
+        st.write(f"Error creating playlist: {e}")
+        return None, None
 
-# Function to add songs to a playlist
+# Function to add songs to a playlist with error handling
 def add_songs_to_playlist(playlist_id, track_uris):
-    sp.playlist_add_items(playlist_id, track_uris)
+    try:
+        for uri in track_uris:
+            sp.playlist_add_items(playlist_id, [uri])
+            time.sleep(1)  # Adding a 1-second delay between adding songs
+        st.write("Songs added to the playlist successfully.")
+    except Exception as e:
+        st.write(f"Error adding songs: {e}")
 
 # Function to calculate the similarity ratio between two strings
 def calculate_similarity(a, b):
@@ -64,46 +81,55 @@ def find_best_match_from_start(words, start_index):
 
     return best_uri, best_combination
 
-# Main function to generate a playlist from a prompt
+# Main function to generate a playlist from a prompt with detailed debugging
 def generate_playlist_from_prompt(prompt):
     words = get_words_from_prompt(prompt)
     track_uris = []
     current_index = 0
 
+    st.write("Processing words from the prompt...")
+
     while current_index < len(words):
         best_uri, best_combination = find_best_match_from_start(words, current_index)
 
         if best_uri:
-            # Add the best matching song to the playlist
+            st.write(f"Best match found: {best_combination}")
             track_uris.append(best_uri)
-            # Move the current index to the next unmatched word
             current_index += len(best_combination)
         else:
-            # If no combination matches, find the closest match for the current word
-            print(f"No exact song found for current phrase. Searching for the closest match.")
+            st.write(f"No exact match found for words starting from index {current_index}")
             track_uri, track_name = search_song(words[current_index])
             if track_uri:
+                st.write(f"Closest match found: {track_name}")
                 track_uris.append(track_uri)
             else:
-                print(f"No match found for word: '{words[current_index]}'. Adding a generic popular song.")
-                fallback_track_uri, _ = search_song("music")  # Fallback to a generic word like "music"
+                st.write(f"No match found for '{words[current_index]}'. Adding fallback song.")
+                fallback_track_uri, _ = search_song("music")
                 if fallback_track_uri:
                     track_uris.append(fallback_track_uri)
             current_index += 1
 
     user_id = sp.current_user()['id']
     playlist_name = f"Playlist for: {prompt[:20]}..."
+    st.write("Creating playlist...")
     playlist_id, playlist_url = create_playlist(playlist_name, user_id)
-    add_songs_to_playlist(playlist_id, track_uris)
-    return playlist_url
+
+    if playlist_id:
+        st.write("Adding songs to the playlist...")
+        add_songs_to_playlist(playlist_id, track_uris)
+        st.write("Playlist created and songs added successfully.")
+        return playlist_url
+    else:
+        st.write("Failed to create playlist.")
+        return "Error in creating playlist"
 
 # Streamlit interface
-st.title("Write Something and Let Me Turn it into Songs!")
-user_prompt = st.text_input("Write Something Cool! (25 words max):")
+st.title("Spotify Playlist Generator from Prompt")
+user_prompt = st.text_input("Enter your prompt (25 words max):")
 
 if st.button("Generate Playlist"):
     if user_prompt:
-        with st.spinner('Abracadabra...'):
+        with st.spinner('Generating your playlist...'):
             playlist_url = generate_playlist_from_prompt(user_prompt)
         st.success('Playlist created successfully!')
         st.markdown(f"[Click here to open your playlist]({playlist_url})")
