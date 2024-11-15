@@ -5,9 +5,9 @@ from difflib import SequenceMatcher
 import streamlit as st
 
 # Spotify API credentials - Make sure to replace these with your own
-CLIENT_ID = 'b44b3b00241d4d3b97c9f825f56d66ed'
-CLIENT_SECRET = 'ea38046c1460469bb514202d53d2bc17'
-REDIRECT_URI = 'http://example.com/callback'
+CLIENT_ID = st.secrets["spotify"]["client_id"]
+CLIENT_SECRET = st.secrets["spotify"]["client_secret"]
+REDIRECT_URI = st.secrets["spotify"]["redirect_uri"]
 
 # Spotify Authentication
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
