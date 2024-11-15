@@ -1,2 +1,4 @@
 spotipy
-streamlit
+Flask
+gunicorn
+python-dotenv
