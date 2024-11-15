@@ -15,7 +15,7 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
     scope="playlist-modify-public"
-))
+), requests_timeout=10)
 
 # Function to clean and split the prompt into words
 def get_words_from_prompt(prompt):
