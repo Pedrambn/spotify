@@ -147,12 +147,8 @@ def home():
     return render_template("index.html", playlist_url=playlist_url)
 
 if __name__ == "__main__":
-    app.run(debug=True)
     app = Flask(__name__)
+
+if __name__ == "__main__":
+    app.run(debug=True)
     # Dispatcher is no longer needed, directly use application
-
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    
-if __name__ == '__main__':
-    main()
