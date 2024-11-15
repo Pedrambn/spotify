@@ -98,8 +98,8 @@ def generate_playlist_from_prompt(prompt):
     return playlist_url
 
 # Streamlit interface
-st.title("Write something and let us turn int into songs")
-user_prompt = st.text_input("Write something cool (25 words max):")
+st.title("Write Something and Let Me Turn it into Songs!")
+user_prompt = st.text_input("Write Something Cool! (25 words max):")
 
 if st.button("Generate Playlist"):
     if user_prompt:
