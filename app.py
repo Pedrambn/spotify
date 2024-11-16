@@ -6,17 +6,18 @@ from difflib import SequenceMatcher
 
 app = Flask(__name__)
 
-# Spotify API credentials
-CLIENT_ID = "<YOUR_CLIENT_ID>"
-CLIENT_SECRET = "<YOUR_CLIENT_SECRET>"
-REDIRECT_URI = "<YOUR_REDIRECT_URI>"
+# Spotify API credentials from environment variables
+CLIENT_ID = os.getenv('CLIENT_ID')
+CLIENT_SECRET = os.getenv('CLIENT_SECRET')
+REDIRECT_URI = os.getenv('REDIRECT_URI')
 
 # Spotify Authentication
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
-    scope="playlist-modify-public"
+    scope="playlist-modify-public",
+    requests_timeout=10
 ))
 
 # Function to clean and split the prompt into words
