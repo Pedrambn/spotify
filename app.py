@@ -3,7 +3,6 @@ from flask import Flask, request, render_template, redirect, url_for
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import re
-from difflib import SequenceMatcher
 from rapidfuzz import process, fuzz
 
 app = Flask(__name__)
@@ -70,6 +69,16 @@ def find_best_songs(sp, prompt):
             current_index += 1
 
     return track_uris, matched_phrases
+
+
+# Function to create a Spotify playlist
+def create_playlist(sp, name, user_id):
+    playlist = sp.user_playlist_create(user=user_id, name=name, public=True)
+    return playlist['id'], playlist['external_urls']['spotify']
+
+# Function to add songs to a playlist
+def add_songs_to_playlist(sp, playlist_id, track_uris):
+    sp.playlist_add_items(playlist_id, track_uris)
 
 
 # Updated playlist generation function
