@@ -4,6 +4,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import re
 from difflib import SequenceMatcher
+from rapidfuzz import process, fuzz
 
 app = Flask(__name__)
 
@@ -23,47 +24,67 @@ sp_oauth = SpotifyOAuth(
     open_browser=False
 )
 
-# Function to clean and split the prompt into words
-def get_words_from_prompt(prompt):
-    prompt = re.sub(r'[^a-zA-Z0-9\s]', '', prompt)  # Remove special characters
+# Function to search for songs using a sliding window
+def find_best_songs(sp, prompt):
     words = prompt.split()
-    return words[:25]  # Limit to 25 words
-
-# Function to search for a song by title
-def search_song(sp, query):
-    results = sp.search(q=f'track:{query}', type='track', limit=5)
-    tracks = results.get('tracks', {}).get('items', [])
-    if tracks:
-        return tracks[0]['uri'], tracks[0]['name']
-    else:
-        return None, None
-
-# Function to create a Spotify playlist
-def create_playlist(sp, name, user_id):
-    playlist = sp.user_playlist_create(user=user_id, name=name, public=True)
-    return playlist['id'], playlist['external_urls']['spotify']
-
-# Function to add songs to a playlist
-def add_songs_to_playlist(sp, playlist_id, track_uris):
-    sp.playlist_add_items(playlist_id, track_uris)
-
-# Function to generate playlist from a prompt
-def generate_playlist(sp, prompt):
-    words = get_words_from_prompt(prompt)
-    track_uris = []
     current_index = 0
+    track_uris = []
+    matched_phrases = []  # Keep track of matched phrases for debugging
 
     while current_index < len(words):
-        track_uri, _ = search_song(sp, words[current_index])
-        if track_uri:
-            track_uris.append(track_uri)
-        current_index += 1
+        best_match = None
+        best_uri = None
+        best_phrase = None
+        max_score = 0
 
+        # Start with the longest possible phrase and reduce size
+        for phrase_length in range(len(words) - current_index, 0, -1):
+            phrase = ' '.join(words[current_index:current_index + phrase_length])
+            
+            # Search for songs that match the current phrase
+            results = sp.search(q=f'track:"{phrase}"', type='track', limit=5)
+            tracks = results.get('tracks', {}).get('items', [])
+            
+            # Check for the best match in the results
+            for track in tracks:
+                score = fuzz.ratio(phrase.lower(), track['name'].lower())
+                if score > max_score:
+                    max_score = score
+                    best_match = track['name']
+                    best_uri = track['uri']
+                    best_phrase = phrase
+            
+            # Break if we find a strong match (e.g., score > 90)
+            if max_score >= 90:
+                break
+
+        # If a match is found, add it to the playlist
+        if best_match:
+            print(f"Matched phrase: '{best_phrase}' -> '{best_match}' (Score: {max_score})")
+            matched_phrases.append(best_phrase)
+            track_uris.append(best_uri)
+            current_index += len(best_phrase.split())  # Skip words matched by this phrase
+        else:
+            # Skip the current word if no match is found
+            print(f"No match found for '{words[current_index]}'. Skipping.")
+            current_index += 1
+
+    return track_uris, matched_phrases
+
+
+# Updated playlist generation function
+def generate_playlist_optimized(sp, prompt):
+    track_uris, matched_phrases = find_best_songs(sp, prompt)
+    
+    # Create a playlist in the user's Spotify account
     user_id = sp.current_user()['id']
     playlist_name = f"Playlist for: {prompt[:20]}..."
     playlist_id, playlist_url = create_playlist(sp, playlist_name, user_id)
     add_songs_to_playlist(sp, playlist_id, track_uris)
+
+    print(f"Matched phrases: {matched_phrases}")
     return playlist_url
+
 
 # Flask Routes
 @app.route('/')
