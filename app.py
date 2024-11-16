@@ -81,5 +81,22 @@ def generate():
     except Exception as e:
         return render_template('index.html', error=str(e))
 
+# Callback route to handle Spotify OAuth redirect
+@app.route('/callback')
+def callback():
+    # Extract the authorization code from the query parameters
+    code = request.args.get('code')
+    if not code:
+        return "Authorization failed: No code received.", 400
+
+    # Exchange the authorization code for access and refresh tokens
+    try:
+        token_info = sp.auth_manager.get_access_token(code=code)
+        print(f"Access Token: {token_info['access_token']}")
+        return "Authorization successful! You can now use the app."
+    except Exception as e:
+        print(f"Error during token exchange: {e}")
+        return "Authorization failed during token exchange.", 500
+
 if __name__ == '__main__':
     app.run(debug=False)
