@@ -107,7 +107,7 @@ def generate():
         return redirect(url_for('index'))
 
     try:
-        playlist_url = generate_playlist(sp, prompt)
+        playlist_url = generate_playlist_optimized(sp, prompt)
         return render_template('index.html', playlist_url=playlist_url)
     except Exception as e:
         return render_template('index.html', error=str(e))
