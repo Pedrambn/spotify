@@ -18,11 +18,9 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     redirect_uri=REDIRECT_URI,
     scope="playlist-modify-public",
     requests_timeout=10,
-    open_browser=False
+    open_browser=False,
+    cache_path="/tmp/.spotify_cache"  # Use /tmp/ in Render for write access
 ))
-print(f"CLIENT_ID: {CLIENT_ID}")
-print(f"CLIENT_SECRET: {CLIENT_SECRET}")
-print(f"REDIRECT_URI: {REDIRECT_URI}")
 
 # Function to clean and split the prompt into words
 def get_words_from_prompt(prompt):
