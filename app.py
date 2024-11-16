@@ -149,6 +149,14 @@ def home():
 app = Flask(__name__)
 
 @app.route("/", methods=["GET", "POST"])
+def home():
+    playlist_url = None
+    if request.method == "POST":
+        user_prompt = request.form.get("prompt")
+        if user_prompt:
+            playlist_url = generate_playlist_from_prompt(user_prompt)
+    return render_template("index.html", playlist_url=playlist_url)
+
 if __name__ == "__main__":
     app.run(debug=True)
     
