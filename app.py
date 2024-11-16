@@ -12,14 +12,17 @@ CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 
-# Spotify Authentication
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
     scope="playlist-modify-public",
-    requests_timeout=10
+    requests_timeout=10,
+    open_browser=False
 ))
+print(f"CLIENT_ID: {CLIENT_ID}")
+print(f"CLIENT_SECRET: {CLIENT_SECRET}")
+print(f"REDIRECT_URI: {REDIRECT_URI}")
 
 # Function to clean and split the prompt into words
 def get_words_from_prompt(prompt):
