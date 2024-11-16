@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, render_template, redirect, url_for
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
