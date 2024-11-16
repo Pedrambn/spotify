@@ -2,3 +2,4 @@ spotipy
 Flask
 gunicorn
 python-dotenv
+rapidfuzz
