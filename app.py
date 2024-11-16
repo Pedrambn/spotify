@@ -3,14 +3,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import re
 from difflib import SequenceMatcher
-import os
 import logging
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-import re
-from difflib import SequenceMatcher
 import os
-
 
 # Spotify API credentials
 CLIENT_ID = 'your_spotify_client_id'
@@ -27,6 +21,9 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
 
 # Set up logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# Flask app setup
+app = Flask(__name__)
 
 # Function to clean and split the prompt into words
 def get_words_from_prompt(prompt):
@@ -68,25 +65,6 @@ def calculate_similarity(a, b):
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 # Function to find the best match for the current sequence of words
-
-def find_best_match_from_start(words, start_index):
-    best_uri = None
-    best_combination = []
-    best_score = 0
-
-    # Try combinations starting from the current index, moving sequentially
-    for length in range(len(words) - start_index, 0, -1):
-        phrase = ' '.join(words[start_index:start_index + length])
-        track_uri, track_name = search_song(phrase)
-        if track_uri:
-            similarity_score = calculate_similarity(phrase, track_name)
-            if similarity_score > best_score:
-                best_combination = words[start_index:start_index + length]
-                best_uri = track_uri
-                best_score = similarity_score
-
-    return best_uri, best_combination
-
 def find_best_match_from_start(words, start_index):
     best_uri = None
     best_combination = []
@@ -137,17 +115,7 @@ def generate_playlist_from_prompt(prompt):
     else:
         return "Error in creating playlist"
 
-@app.route("/", methods=["GET", "POST"])
-def home():
-    playlist_url = None
-    if request.method == "POST":
-        user_prompt = request.form.get("prompt")
-        if user_prompt:
-            playlist_url = generate_playlist_from_prompt(user_prompt)
-    return render_template("index.html", playlist_url=playlist_url)
-
-app = Flask(__name__)
-
+# Flask route for the homepage
 @app.route("/", methods=["GET", "POST"])
 def home():
     playlist_url = None
@@ -159,7 +127,3 @@ def home():
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
-        
-    
-
