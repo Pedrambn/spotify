@@ -4,7 +4,6 @@ from spotipy.oauth2 import SpotifyOAuth
 import re
 from difflib import SequenceMatcher
 import logging
-import os
 
 # Spotify API credentials
 CLIENT_ID = 'your_spotify_client_id'
