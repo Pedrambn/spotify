@@ -41,7 +41,7 @@ def find_best_songs(sp, prompt):
             phrase = ' '.join(words[current_index:current_index + phrase_length])
             
             # Search for songs that match the current phrase
-            results = sp.search(q=f'track:"{phrase}"', type='track', limit=5)
+            results = sp.search(q=f'track:"{phrase}"', type='track', limit=5, market="from_token")
             tracks = results.get('tracks', {}).get('items', [])
             
             # Check for the best match in the results
