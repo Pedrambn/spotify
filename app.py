@@ -18,10 +18,10 @@ sp_oauth = SpotifyOAuth(
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
     scope="playlist-modify-public user-read-private user-read-email",
-    cache_path="/tmp/.spotify_cache",
     requests_timeout=10,
     open_browser=False
 )
+
 
 def find_best_songs(sp, prompt):
     words = prompt.split()
@@ -103,14 +103,20 @@ def index():
 @app.route('/generate', methods=['POST'])
 def generate():
     # Redirect user to Spotify login if no valid token exists
-    token_info = sp_oauth.get_cached_token()
-    if not token_info:
-        # Generate Spotify login URL
+    code = request.args.get('code')
+    if not code:
+        # Generate Spotify login URL and redirect user
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
 
-    # User is authenticated; proceed to generate the playlist
-    sp = spotipy.Spotify(auth_manager=sp_oauth)
+    try:
+        # Exchange the authorization code for an access token
+        token_info = sp_oauth.get_access_token(code)
+        sp = spotipy.Spotify(auth=token_info['access_token'])
+    except Exception as e:
+        return render_template('index.html', error=f"Authentication failed: {str(e)}")
+
+    # Generate playlist as usual
     prompt = request.form.get('prompt')
     if not prompt:
         return redirect(url_for('index'))
@@ -121,6 +127,7 @@ def generate():
     except Exception as e:
         return render_template('index.html', error=str(e))
 
+
 @app.route('/callback')
 def callback():
     # Handle Spotify's redirect with the authorization code
@@ -129,10 +136,11 @@ def callback():
         return "Authorization failed: No code received.", 400
 
     try:
-        sp_oauth.get_access_token(code=code)
+        token_info = sp_oauth.get_access_token(code)
         return redirect(url_for('index'))
     except Exception as e:
         return f"Authorization failed: {e}", 500
+
 
 if __name__ == '__main__':
     app.run(debug=False)
