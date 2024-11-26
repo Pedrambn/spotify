@@ -23,7 +23,6 @@ sp_oauth = SpotifyOAuth(
     open_browser=False
 )
 
-# Function to search for songs using a sliding window
 def find_best_songs(sp, prompt):
     words = prompt.split()
     current_index = 0
@@ -69,6 +68,7 @@ def find_best_songs(sp, prompt):
             current_index += 1
 
     return track_uris, matched_phrases
+
 
 
 # Function to create a Spotify playlist
